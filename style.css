@@ -1,0 +1,41 @@
+body {
+    background: black;
+    color: red;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+textarea, input {
+    background: #222;
+    color: white;
+    border: 1px solid red;
+    width: 80%;
+    margin: 10px;
+    padding: 8px;
+}
+
+button {
+    background: red;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: darkred;
+}
+
+.post {
+    background: #222;
+    border: 1px solid red;
+    padding: 10px;
+    margin: 10px;
+    text-align: left;
+}
+
+.comments {
+    margin-top: 5px;
+    font-size: 12px;
+    color: lightgray;
+}
