@@ -4,7 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Eyes</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .search-container, .post-container {
+            margin-bottom: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -12,16 +54,73 @@
         <p>Website ini mendukung kebebasan bicara dalam mengkritik politik dan beberapa kebebasan berbicara dengan anonymous.</p>
         <p class="disclaimer">Disclaimer: Pengguna bertanggung jawab atas konten yang diunggah.</p>
         <p class="powered">Powered by ZeRotrus/RtR0 and Afifcom32</p>
-       \<input type="text" id="search" placeholder="Cari postingan..." onkeypress="handleSearch(event)">
-
+        <input type="text" id="search" placeholder="Cari postingan..." onkeypress="handleSearch(event)">
     </header>
     
-    <main>
+    <main class="container">
         <textarea id="newPost" placeholder="Tulis sesuatu..."></textarea>
         <button onclick="addPost()">Post</button>
         <div id="posts"></div>
     </main>
 
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            loadPosts();
+        });
+
+        function addPost() {
+            let postText = document.getElementById("newPost").value;
+            if (postText.trim() === "") return;
+            
+            let posts = JSON.parse(localStorage.getItem("posts")) || [];
+            posts.push({ text: postText, likes: 0 });
+            localStorage.setItem("posts", JSON.stringify(posts));
+            
+            document.getElementById("newPost").value = "";
+            loadPosts();
+        }
+
+        function loadPosts() {
+            let postsContainer = document.getElementById("posts");
+            postsContainer.innerHTML = "";
+            
+            let posts = JSON.parse(localStorage.getItem("posts")) || [];
+            posts.forEach((post, index) => {
+                let postElement = document.createElement("div");
+                postElement.innerHTML = `<p>${post.text}</p>
+                                        <button onclick="likePost(${index})">Like (${post.likes})</button>`;
+                postsContainer.appendChild(postElement);
+            });
+        }
+
+        function likePost(index) {
+            let posts = JSON.parse(localStorage.getItem("posts")) || [];
+            posts[index].likes += 1;
+            localStorage.setItem("posts", JSON.stringify(posts));
+            loadPosts();
+        }
+
+        function handleSearch(event) {
+            if (event.key === "Enter") {
+                searchPosts();
+            }
+        }
+
+        function searchPosts() {
+            let query = document.getElementById("search").value.toLowerCase();
+            let posts = JSON.parse(localStorage.getItem("posts")) || [];
+            let filteredPosts = posts.filter(post => post.text.toLowerCase().includes(query));
+            
+            let postsContainer = document.getElementById("posts");
+            postsContainer.innerHTML = "";
+            
+            filteredPosts.forEach((post, index) => {
+                let postElement = document.createElement("div");
+                postElement.innerHTML = `<p>${post.text}</p>
+                                        <button onclick="likePost(${index})">Like (${post.likes})</button>`;
+                postsContainer.appendChild(postElement);
+            });
+        }
+    </script>
 </body>
 </html>
