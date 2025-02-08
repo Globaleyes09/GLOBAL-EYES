@@ -1,59 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     loadPosts();
+    fetchComments();
 });
-
-function addPost() {
-    let postText = document.getElementById("newPost").value;
-    if (postText.trim() === "") return;
-    
-    let posts = JSON.parse(localStorage.getItem("posts")) || [];
-    posts.push({ text: postText, likes: 0 });
-    localStorage.setItem("posts", JSON.stringify(posts));
-    
-    document.getElementById("newPost").value = "";
-    loadPosts();
-}
-
-function loadPosts() {
-    let postsContainer = document.getElementById("posts");
-    postsContainer.innerHTML = "";
-    
-    let posts = JSON.parse(localStorage.getItem("posts")) || [];
-    posts.forEach((post, index) => {
-        let postElement = document.createElement("div");
-        postElement.innerHTML = `<p>${post.text}</p>
-                                <button onclick="likePost(${index})">Like (${post.likes})</button>`;
-        postsContainer.appendChild(postElement);
-    });
-}
-
-function likePost(index) {
-    let posts = JSON.parse(localStorage.getItem("posts")) || [];
-    posts[index].likes += 1;
-    localStorage.setItem("posts", JSON.stringify(posts));
-    loadPosts();
-}
-
-function searchPosts() {
-    let query = document.getElementById("search").value.toLowerCase();
-    let posts = JSON.parse(localStorage.getItem("posts")) || [];
-    let filteredPosts = posts.filter(post => post.text.toLowerCase().includes(query));
-    
-    let postsContainer = document.getElementById("posts");
-    postsContainer.innerHTML = "";
-    
-    filteredPosts.forEach((post, index) => {
-        let postElement = document.createElement("div");
-        postElement.innerHTML = `<p>${post.text}</p>
-                                <button onclick="likePost(${index})">Like (${post.likes})</button>`;
-        postsContainer.appendChild(postElement);
-    });
-}
-
-
-// Import Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // Konfigurasi Firebase
 const firebaseConfig = {
@@ -67,8 +15,50 @@ const firebaseConfig = {
 };
 
 // Inisialisasi Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Fungsi Menambahkan Postingan ke Firebase
+async function addPost() {
+    let postText = document.getElementById("newPost").value;
+    if (postText.trim() === "") return;
+
+    await db.collection("posts").add({
+        text: postText,
+        likes: 0,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById("newPost").value = "";
+    loadPosts();
+}
+
+// Fungsi Memuat Postingan dari Firebase
+async function loadPosts() {
+    let postsContainer = document.getElementById("posts");
+    postsContainer.innerHTML = "";
+
+    const querySnapshot = await db.collection("posts").orderBy("timestamp", "desc").get();
+    querySnapshot.forEach((doc) => {
+        let post = doc.data();
+        let postElement = document.createElement("div");
+        postElement.innerHTML = `<p>${post.text}</p>
+                                 <button onclick="likePost('${doc.id}')">Like (${post.likes})</button>`;
+        postsContainer.appendChild(postElement);
+    });
+}
+
+// Fungsi Like Postingan
+async function likePost(postId) {
+    const postRef = db.collection("posts").doc(postId);
+    const postDoc = await postRef.get();
+    
+    if (postDoc.exists) {
+        let newLikes = postDoc.data().likes + 1;
+        await postRef.update({ likes: newLikes });
+        loadPosts();
+    }
+}
 
 // Fungsi Menambahkan Komentar
 async function addComment() {
@@ -76,7 +66,10 @@ async function addComment() {
     const commentText = commentInput.value.trim();
     
     if (commentText !== "") {
-        await addDoc(collection(db, "comments"), { text: commentText, timestamp: Date.now() });
+        await db.collection("comments").add({
+            text: commentText,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
         commentInput.value = "";
         fetchComments();
     }
@@ -84,8 +77,7 @@ async function addComment() {
 
 // Fungsi Menampilkan Komentar
 async function fetchComments() {
-    const q = query(collection(db, "comments"), orderBy("timestamp", "desc"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await db.collection("comments").orderBy("timestamp", "desc").get();
     
     let commentList = "";
     querySnapshot.forEach((doc) => {
@@ -95,8 +87,5 @@ async function fetchComments() {
     document.getElementById("comment-section").innerHTML = commentList;
 }
 
-// Event Listener untuk Tombol Kirim
+// Event Listener untuk Tombol Kirim Komentar
 document.getElementById("send-comment").addEventListener("click", addComment);
-
-// Panggil fungsi untuk menampilkan komentar saat halaman dimuat
-fetchComments();
